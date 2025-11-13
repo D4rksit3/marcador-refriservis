@@ -1,0 +1,328 @@
+================================================================================
+  SISTEMA DE MARCACIONES - ESTRUCTURA COMPLETA DEL PROYECTO
+================================================================================
+
+📁 ESTRUCTURA DE CARPETAS Y ARCHIVOS
+================================================================================
+
+sistema_marcaciones/
+│
+├── 📄 .htaccess                    # Configuración de seguridad Apache
+├── 📄 config.php                   # Configuración general y base de datos
+├── 📄 index.php                    # Página principal de marcaciones
+├── 📄 procesar_marcacion.php       # Procesa las marcaciones Ajax
+│
+├── 📁 admin/                       # Panel de administración
+│   ├── 📄 .htaccess               # Seguridad específica admin
+│   ├── 📄 login.php               # Inicio de sesión administrador
+│   ├── 📄 logout.php              # Cerrar sesión
+│   ├── 📄 index.php               # Dashboard principal
+│   ├── 📄 usuarios.php            # Gestión CRUD de usuarios
+│   ├── 📄 reportes.php            # Reportes y exportación
+│   ├── 📄 graficas.php            # Estadísticas visuales
+│   ├── 📄 mapa.php                # Mapa de ubicaciones
+│   ├── 📄 administradores.php     # Gestión de administradores
+│   │
+│   └── 📁 includes/               # Archivos compartidos
+│       ├── 📄 header.php          # Encabezado común
+│       └── 📄 footer.php          # Pie de página común
+│
+├── 📁 sql/                        # Scripts de base de datos
+│   ├── 📄 database.sql           # Estructura completa de BD
+│   └── 📄 datos_prueba.sql       # Datos de ejemplo (opcional)
+│
+└── 📄 README.md                   # Documentación completa
+
+================================================================================
+📊 BASE DE DATOS - 3 TABLAS PRINCIPALES
+================================================================================
+
+1. TABLA: usuarios
+   - Almacena empleados que pueden marcar asistencia
+   - Campos: id, dni, nombres, apellidos, correo, telefono, cargo, departamento,
+            fecha_ingreso, estado, fecha_registro
+
+2. TABLA: administradores  
+   - Usuarios con acceso al panel de administración
+   - Campos: id, usuario, password (hash), nombre_completo, correo, 
+            ultimo_acceso, fecha_registro
+
+3. TABLA: marcaciones
+   - Registra todas las marcaciones con geolocalización
+   - Campos: id, usuario_id, dni, tipo_marcacion, fecha, hora, latitud,
+            longitud, direccion, fecha_hora_registro
+
+4. VISTA: v_marcaciones_diarias
+   - Consolidación de todas las marcaciones del día en una sola fila
+   - Usado para reportes optimizados
+
+================================================================================
+🎯 FUNCIONALIDADES POR MÓDULO
+================================================================================
+
+PÁGINA PÚBLICA (index.php)
+----------------------------
+✅ Formulario de marcación por DNI
+✅ 6 tipos de marcación disponibles
+✅ Captura automática de geolocalización
+✅ Validación de usuario en base de datos
+✅ Modal de confirmación con detalles
+✅ Obtención de dirección desde coordenadas
+✅ Diseño responsive y moderno
+
+PANEL DE ADMINISTRACIÓN
+----------------------------
+
+🔐 LOGIN (login.php)
+   - Autenticación segura con hash bcrypt
+   - Validación de credenciales
+   - Gestión de sesiones
+   - Credenciales por defecto: admin/admin123
+
+📊 DASHBOARD (index.php)
+   - Resumen de estadísticas generales
+   - Total usuarios, marcaciones del día
+   - Últimas 10 marcaciones
+   - Marcaciones por tipo (gráfico)
+   - Top 5 usuarios más activos
+   - Tarjetas con métricas visuales
+
+👥 USUARIOS (usuarios.php)
+   - Listado completo de empleados
+   - Agregar nuevo usuario (formulario modal)
+   - Editar información existente
+   - Activar/Desactivar usuarios
+   - Eliminar usuarios (con confirmación)
+   - Búsqueda por DNI, nombre, correo
+   - Filtro por estado (activo/inactivo)
+
+📋 REPORTES (reportes.php)
+   - Vista consolidada por día
+   - Una fila = todas las marcaciones del día
+   - Filtros avanzados:
+     * Por DNI
+     * Por nombre
+     * Rango de fechas
+   - Exportación a Excel (formato .xls)
+   - Exportación a PDF (formato básico)
+   - Modal con detalles completos
+   - Enlaces a Google Maps
+   - Incluye todas las ubicaciones
+
+📈 GRÁFICAS (graficas.php)
+   - Chart.js para visualizaciones
+   - Gráfico de línea: Marcaciones últimos 7 días
+   - Gráfico de dona: Marcaciones por tipo
+   - Gráfico de barras: Usuarios más activos
+   - Gráfico de barras: Por día de la semana
+   - Tabla estadística por departamento
+   - Gráficos interactivos y responsivos
+
+🗺️ MAPA (mapa.php)
+   - Leaflet.js + OpenStreetMap
+   - Visualización de todas las marcaciones
+   - Filtro por fecha
+   - Filtro por tipo de marcación
+   - Marcadores con colores por tipo
+   - Popups informativos con datos completos
+   - Lista tabular de marcaciones
+   - Centrado automático en marcador
+   - Enlaces a Google Maps
+
+🔐 ADMINISTRADORES (administradores.php)
+   - Gestión de usuarios admin
+   - Agregar nuevos administradores
+   - Editar credenciales
+   - Cambiar contraseña
+   - Eliminar administradores (con protección)
+   - No permite eliminar el último admin
+   - No permite auto-eliminarse
+   - Registro de último acceso
+
+================================================================================
+🔒 CARACTERÍSTICAS DE SEGURIDAD
+================================================================================
+
+✅ Contraseñas hasheadas con bcrypt (password_hash)
+✅ Sesiones seguras con httponly
+✅ Prepared statements (PDO) contra SQL Injection
+✅ Sanitización de todos los inputs (htmlspecialchars)
+✅ Validación de tipos de datos
+✅ Protección de archivos con .htaccess
+✅ Headers de seguridad (X-Frame-Options, etc.)
+✅ Validación de autenticación en cada página admin
+✅ Protección contra listado de directorios
+✅ Bloqueo de acceso a archivos sensibles
+
+================================================================================
+🌐 TECNOLOGÍAS UTILIZADAS
+================================================================================
+
+BACKEND:
+--------
+- PHP 7.4+ (nativo, sin frameworks)
+- MySQL / MariaDB
+- PDO para conexiones seguras
+- Sesiones PHP nativas
+
+FRONTEND:
+---------
+- HTML5 semántico
+- CSS3 (sin frameworks, diseño custom)
+- JavaScript vanilla (sin jQuery)
+- Fetch API para peticiones AJAX
+
+APIS/LIBRERÍAS EXTERNAS:
+------------------------
+- Chart.js 3.9.1 (gráficas)
+- Leaflet.js 1.9.4 (mapas)
+- OpenStreetMap (tiles de mapa)
+- Nominatim (geocodificación reversa)
+- Geolocation API (navegador)
+
+================================================================================
+📝 TIPOS DE MARCACIÓN
+================================================================================
+
+1. 🟢 ENTRADA              - Al llegar a la oficina
+2. 🔴 SALIDA               - Al salir de la oficina
+3. ☕ SALIDA REFRIGERIO    - Al salir a almorzar/refrigerio
+4. 🍽️ ENTRADA REFRIGERIO   - Al regresar del refrigerio
+5. 🚗 ENTRADA CAMPO        - Al salir a trabajo de campo
+6. 🏢 SALIDA CAMPO         - Al regresar del trabajo de campo
+
+Todas las marcaciones capturan:
+- Fecha y hora exacta (según zona horaria configurada)
+- Coordenadas GPS (latitud y longitud)
+- Dirección completa (obtenida automáticamente)
+- Usuario que marca (validado contra BD)
+
+================================================================================
+🎨 PALETA DE COLORES
+================================================================================
+
+Primarios:
+- Morado: #667eea (botones principales, marca)
+- Morado oscuro: #764ba2 (gradientes)
+
+Marcaciones:
+- Verde: #10b981 (entrada)
+- Rojo: #ef4444 (salida)
+- Naranja: #f59e0b (salida refrigerio)
+- Morado claro: #8b5cf6 (entrada refrigerio)
+- Cian: #06b6d4 (entrada campo)
+- Rosa: #ec4899 (salida campo)
+
+Estados:
+- Success: #10b981
+- Danger: #ef4444
+- Warning: #f59e0b
+- Info: #06b6d4
+
+Neutros:
+- Texto principal: #333
+- Texto secundario: #666
+- Bordes: #e0e0e0
+- Fondo: #f5f7fa
+
+================================================================================
+📱 RESPONSIVE DESIGN
+================================================================================
+
+Breakpoints:
+- Desktop: > 1024px (layout completo)
+- Tablet: 768px - 1024px (adaptado)
+- Mobile: < 768px (columna única)
+
+Características responsive:
+✅ Menú de navegación adaptable
+✅ Tablas con scroll horizontal en móviles
+✅ Tarjetas en grid responsive
+✅ Formularios adaptables
+✅ Botones touch-friendly
+✅ Modales centrados en todas las pantallas
+
+================================================================================
+⚡ OPTIMIZACIONES
+================================================================================
+
+- Índices en columnas frecuentemente consultadas
+- Vista consolidada para reportes (evita múltiples joins)
+- Prepared statements con parámetros ligados
+- Caché de tiles de mapa
+- Compresión de archivos estáticos
+- Consultas optimizadas con LIMIT
+- Uso mínimo de JavaScript externo
+
+================================================================================
+🔄 FLUJO DE USO TÍPICO
+================================================================================
+
+EMPLEADO:
+1. Abre la página pública
+2. Ingresa su DNI
+3. Permite geolocalización (si es primera vez)
+4. Hace clic en tipo de marcación
+5. Sistema valida y registra
+6. Muestra confirmación con detalles
+
+ADMINISTRADOR:
+1. Accede a admin/login.php
+2. Ingresa credenciales
+3. Ve dashboard con resumen
+4. Gestiona usuarios según necesidad
+5. Consulta reportes con filtros
+6. Exporta datos según requerimiento
+7. Visualiza estadísticas en gráficas
+8. Revisa ubicaciones en mapa
+
+================================================================================
+✨ CARACTERÍSTICAS DESTACADAS
+================================================================================
+
+✅ 100% PHP NATIVO - Sin composer ni dependencias
+✅ GEOLOCALIZACIÓN REAL - Captura ubicación exacta
+✅ DIRECCIONES AUTOMÁTICAS - Obtiene dirección completa
+✅ REPORTES EN UNA FILA - Todas las marcaciones del día consolidadas
+✅ EXPORTACIÓN MÚLTIPLE - Excel y PDF
+✅ MAPA INTERACTIVO - Visualización geográfica
+✅ GRÁFICAS DINÁMICAS - Estadísticas visuales
+✅ DISEÑO MODERNO - UI/UX profesional
+✅ TOTALMENTE RESPONSIVE - Funciona en todos los dispositivos
+✅ SEGURO - Múltiples capas de protección
+
+================================================================================
+📌 NOTAS IMPORTANTES
+================================================================================
+
+1. Las coordenadas de ejemplo son de Lima, Perú
+2. Ajusta las coordenadas según tu ubicación real
+3. HTTPS requerido para geolocalización en producción
+4. Nominatim tiene límite de 1 request/segundo
+5. Cambia credenciales admin en producción
+6. Configura zona horaria correctamente
+7. Verifica permisos de archivos en servidor
+8. Considera implementar backups automáticos
+9. Para producción: usar TCPDF para PDFs profesionales
+10. Monitorea logs de error regularmente
+
+================================================================================
+🎓 CRÉDITOS
+================================================================================
+
+Sistema desarrollado con:
+- PHP nativo (sin frameworks)
+- MySQL para persistencia
+- Chart.js para gráficas
+- Leaflet.js + OpenStreetMap para mapas
+- APIs nativas del navegador
+
+Diseño UI/UX personalizado
+Sin dependencias de terceros (composer)
+Listo para producción con ajustes de seguridad
+
+================================================================================
+
+Para soporte técnico o consultas, revisa el README.md completo.
+
+================================================================================
