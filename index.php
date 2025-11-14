@@ -66,7 +66,7 @@ require_once 'config.php';
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        /* Botón de envío que estará oculto o estilizado */
+        /* Botón de envío que estará oculto */
         .btn-dni {
             background: #667eea;
             color: white;
@@ -78,7 +78,6 @@ require_once 'config.php';
             cursor: pointer;
             transition: all 0.3s;
             width: 100%;
-            /* Hacemos que se vea como un botón de acción principal */
         }
         .btn-dni:hover {
             background: #5568d3;
@@ -308,7 +307,7 @@ require_once 'config.php';
             </div>
             
             <button type="submit" class="btn-dni" style="display: none;">
-                Validar DNI (Enter)
+                Validar DNI
             </button>
         </form>
         
@@ -363,6 +362,7 @@ require_once 'config.php';
     <script>
     let currentPosition = null;
     let currentDNI = null;
+    let dniInput = document.getElementById('dni');
 
     // Opciones para máxima precisión
     const options = {
@@ -387,13 +387,20 @@ require_once 'config.php';
             },
             (error) => {
                 console.error("Error GPS:", error);
-                // No mostramos error en bucle, solo en el momento de la marcación
             },
             options
         );
     }
 
-    // Evento que se dispara cuando el usuario presiona ENTER o cuando el campo pierde el foco
+    // --- DISPARADOR AUTOMÁTICO: BLUR (al perder el foco) ---
+    dniInput.addEventListener('blur', function() {
+        // Ejecuta la validación solo si el campo tiene suficientes caracteres
+        if (this.value.trim().length >= 5) {
+            validarDniYMostrarOpciones();
+        }
+    });
+
+    // --- DISPARADOR MANUAL: SUBMIT (al presionar Enter) ---
     document.getElementById('dniForm').addEventListener('submit', function(e) {
         e.preventDefault();
         validarDniYMostrarOpciones();
@@ -411,10 +418,10 @@ require_once 'config.php';
     });
 
     function validarDniYMostrarOpciones() {
-        const dni = document.getElementById('dni').value.trim();
-
+        const dni = dniInput.value.trim();
+        
         // 1. Validaciones básicas
-        if (!dni || dni.length < 5) { // DNI debe tener al menos 5 caracteres
+        if (!dni || dni.length < 5) { 
             mostrarError('DNI incompleto o vacío.');
             return;
         }
@@ -433,7 +440,7 @@ require_once 'config.php';
         }
 
 
-        // 2. Llamada al servidor para validar DNI (usando procesar_marcacion.php?validar)
+        // 2. Llamada al servidor para validar DNI
         mostrarLoading();
 
         const formData = new FormData();
@@ -453,13 +460,13 @@ require_once 'config.php';
                 mostrarOpcionesModal(data.data.nombre); // data.data.nombre viene del servidor
             } else {
                 mostrarModalError(data.message || 'Error de validación de DNI.');
-                document.getElementById('dni').value = ''; // Limpiar campo si falla
+                dniInput.value = ''; // Limpiar campo si falla
             }
         })
         .catch(() => {
             cerrarModal();
             mostrarModalError('Error de conexión con el servidor (procesar_marcacion.php).');
-            document.getElementById('dni').value = '';
+            dniInput.value = '';
         });
     }
 
@@ -469,11 +476,11 @@ require_once 'config.php';
             return;
         }
         
-        // La validación de ubicación ya se hizo antes de mostrar el modal, pero la repetimos por seguridad
+        // Re-validación de ubicación antes de marcar
         if (!currentPosition || currentPosition.accuracy > 50) {
             mostrarModalError("La ubicación se perdió o no es precisa. Vuelve a ingresar tu DNI.");
             currentDNI = null;
-            document.getElementById('dni').value = '';
+            dniInput.value = '';
             return;
         }
 
@@ -498,7 +505,7 @@ require_once 'config.php';
         .then(data => {
             if (data.success) {
                 mostrarModalExito(data.data, tipo);
-                document.getElementById('dni').value = '';
+                dniInput.value = '';
                 currentDNI = null; // Limpiar DNI
             } else {
                 mostrarModalError(data.message);
@@ -590,9 +597,7 @@ require_once 'config.php';
     window.onclick = function(event) {
         const marcacionModal = document.getElementById('marcacionModal');
         const opcionesModal = document.getElementById('opcionesModal');
-        // Aseguramos que el modal no se cierre al hacer clic dentro
         if (event.target == marcacionModal) cerrarModal();
-        // El modal de opciones se mantiene abierto hasta que se marca o se presiona una tecla (opcional)
         if (event.target == opcionesModal) cerrarOpcionesModal(); 
     }
 </script>
