@@ -9,6 +9,7 @@ require_once 'config.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo SITE_NAME; ?></title>
     <style>
+        /* --- Reset y base --- */
         * {
             margin: 0;
             padding: 0;
@@ -16,74 +17,96 @@ require_once 'config.php';
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #f4f7f9; /* Fondo gris claro suave */
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
         }
+        
+        /* --- Contenedor Principal --- */
         .container {
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
-            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 450px;
             width: 100%;
+            transition: all 0.3s ease;
         }
         h1 {
             color: #333;
             text-align: center;
             margin-bottom: 10px;
-            font-size: 28px;
+            font-size: 26px;
         }
         .subtitle {
             text-align: center;
-            color: #666;
+            color: #6c757d; /* Gris oscuro para subtítulos */
             margin-bottom: 30px;
             font-size: 14px;
         }
+        
+        /* --- Formulario y DNI --- */
         .form-group {
             margin-bottom: 20px;
         }
         label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
+            color: #495057;
             font-weight: 600;
             font-size: 14px;
         }
         input[type="text"] {
             width: 100%;
             padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
             font-size: 16px;
-            transition: all 0.3s;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
         input[type="text"]:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #007bff; /* Azul clásico */
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
         }
-        /* Botón de envío ahora visible */
+        
+        /* --- Botón DNI (Principal) --- */
         .btn-dni {
-            background: #667eea;
+            background: #007bff; /* Azul primario */
             color: white;
             padding: 15px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: background-color 0.2s, transform 0.2s;
             width: 100%;
         }
         .btn-dni:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
+            background: #0056b3; /* Azul más oscuro al pasar el ratón */
+            transform: none; /* Quitamos el efecto 3D para un look más plano */
         }
 
+        /* --- Enlace Admin --- */
+        .admin-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .admin-link a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .admin-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* --- Botones de Opciones (Modal) --- */
         .btn-group {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -93,76 +116,46 @@ require_once 'config.php';
         .btn {
             padding: 15px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* Colores de Marcación Suavizados */
         .btn-entrada {
-            background: #10b981;
+            background: #28a745; /* Verde Bootstrap (éxito) */
             color: white;
-        }
-        .btn-entrada:hover {
-            background: #059669;
-            transform: translateY(-2px);
         }
         .btn-salida {
-            background: #ef4444;
+            background: #dc3545; /* Rojo Bootstrap (peligro) */
             color: white;
-        }
-        .btn-salida:hover {
-            background: #dc2626;
-            transform: translateY(-2px);
         }
         .btn-refrigerio-out {
-            background: #f59e0b;
-            color: white;
-        }
-        .btn-refrigerio-out:hover {
-            background: #d97706;
-            transform: translateY(-2px);
+            background: #ffc107; /* Amarillo oscuro (advertencia) */
+            color: #333;
         }
         .btn-refrigerio-in {
-            background: #8b5cf6;
+            background: #6f42c1; /* Púrpura */
             color: white;
-        }
-        .btn-refrigerio-in:hover {
-            background: #7c3aed;
-            transform: translateY(-2px);
-        }
-        .btn-campo-in {
-            background: #06b6d4;
-            color: white;
-        }
-        .btn-campo-in:hover {
-            background: #0891b2;
-            transform: translateY(-2px);
         }
         .btn-campo-out {
-            background: #ec4899;
+            background: #17a2b8; /* Cyan (info) */
             color: white;
         }
-        .btn-campo-out:hover {
-            background: #db2777;
-            transform: translateY(-2px);
-        }
-        .admin-link {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .admin-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        .admin-link a:hover {
-            text-decoration: underline;
+        .btn-campo-in {
+            background: #fd7e14; /* Naranja */
+            color: white;
         }
         
-        /* Modal */
+        /* --- Modales Comunes (Loading/Resultado) --- */
         .modal {
             display: none;
             position: fixed;
@@ -171,17 +164,17 @@ require_once 'config.php';
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0,0,0,0.4);
             animation: fadeIn 0.3s;
         }
         .modal-content {
             background-color: white;
             margin: 10% auto;
             padding: 30px;
-            border-radius: 15px;
+            border-radius: 12px;
             max-width: 400px;
             width: 90%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             animation: slideIn 0.3s;
         }
         .modal-header {
@@ -189,25 +182,26 @@ require_once 'config.php';
             margin-bottom: 20px;
         }
         .modal-icon {
-            font-size: 60px;
+            font-size: 50px;
             margin-bottom: 10px;
         }
         .modal-title {
-            font-size: 24px;
+            font-size: 22px;
             color: #333;
             margin-bottom: 10px;
         }
         .modal-body {
             text-align: center;
             color: #666;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         .modal-info {
-            background: #f3f4f6;
+            background: #e9ecef; /* Gris muy claro para info box */
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 8px;
             margin: 15px 0;
             text-align: left;
+            border-left: 4px solid #007bff; /* Borde azul de acento */
         }
         .modal-info p {
             margin: 5px 0;
@@ -217,51 +211,55 @@ require_once 'config.php';
             color: #333;
         }
         .close-modal {
-            background: #667eea;
+            background: #007bff;
             color: white;
             border: none;
-            padding: 12px 30px;
+            padding: 10px 25px;
             border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             margin-top: 20px;
-            transition: all 0.3s;
+            transition: background-color 0.2s;
         }
         .close-modal:hover {
-            background: #5568d3;
+            background: #0056b3;
         }
+        
+        /* Mensajes de Estado */
         .error {
-            background: #fee2e2;
-            color: #dc2626;
+            background: #f8d7da; 
+            color: #721c24; 
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 8px;
             margin-bottom: 20px;
-            border-left: 4px solid #dc2626;
+            border-left: 4px solid #dc3545;
             font-size: 14px;
         }
         .success {
-            background: #d1fae5;
-            color: #059669;
+            background: #d4edda;
+            color: #155724; 
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 8px;
             margin-bottom: 20px;
-            border-left: 4px solid #059669;
+            border-left: 4px solid #28a745;
             font-size: 14px;
         }
         .loading {
             text-align: center;
-            padding: 20px;
+            padding: 15px;
         }
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border: 4px solid #e9ecef;
+            border-top: 4px solid #007bff; 
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             animation: spin 1s linear infinite;
             margin: 0 auto;
         }
+        
+        /* Animaciones */
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -271,25 +269,31 @@ require_once 'config.php';
             to { opacity: 1; }
         }
         @keyframes slideIn {
-            from { transform: translateY(-50px); opacity: 0; }
+            from { transform: translateY(-30px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
 
-        /* Estilos para el nuevo modal de opciones de marcación */
+        /* Estilos para el modal de opciones de marcación */
         .modal-marcacion-opciones .modal-content {
-            background-color: #f9fafb;
-            padding: 20px 30px;
+            background-color: #fff;
+            padding: 30px;
             max-width: 450px;
         }
         .modal-marcacion-opciones .modal-title {
-            font-size: 22px;
-            margin-bottom: 5px;
+            font-size: 20px;
         }
-        .modal-marcacion-opciones .modal-body {
-            padding: 10px 0;
-        }
-        .modal-marcacion-opciones .btn-group {
-            margin-top: 20px;
+        
+        /* Media Query para móvil (Mejora la visualización en pantallas muy pequeñas) */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            .btn-group {
+                grid-template-columns: 1fr; /* Una columna en móvil */
+            }
+            .modal-content {
+                margin: 5% auto;
+            }
         }
     </style>
 </head>
@@ -551,7 +555,7 @@ require_once 'config.php';
                 <p><strong>Coordenadas:</strong> ${data.latitud}, ${data.longitud}</p>
                 <p><strong>Precisión GPS:</strong> ${currentPosition ? currentPosition.accuracy.toFixed(0) : 'N/A'} metros</p>
             </div>
-            <p style="color: #059669; font-weight: 600;">¡Marcación exitosa!</p>
+            <p style="color: #28a745; font-weight: 600;">¡Marcación exitosa!</p>
         `;
 
         document.getElementById('marcacionModal').style.display = 'block';
