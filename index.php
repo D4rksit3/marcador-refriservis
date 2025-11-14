@@ -310,166 +310,163 @@ require_once 'config.php';
         </div>
     </div>
 
-    <script>
-        let currentPosition = null;
+   <script>
+    let currentPosition = null;
 
-        // Obtener ubicación al cargar la página
-        // Definir las opciones para mayor precisión
-        const options = {
-            enableHighAccuracy: true, // Esto solicita la máxima precisión posible (e.g., usando GPS)
-            timeout: 5000,            // Tiempo máximo en milisegundos para obtener la posición (5 segundos)
-            maximumAge: 0             // No usar una posición en caché, solicitar una nueva
+    // Opciones para máxima precisión
+    const options = {
+        enableHighAccuracy: true,   // Forzar GPS si está disponible
+        timeout: 15000,             // Espera más tiempo
+        maximumAge: 0               // Sin cache
+    };
+
+    // Obtener ubicación continuamente con watchPosition()
+    if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(
+            (position) => {
+                currentPosition = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    accuracy: position.coords.accuracy
+                };
+
+                console.log("Lat:", currentPosition.lat);
+                console.log("Lng:", currentPosition.lng);
+                console.log("Precisión:", currentPosition.accuracy, "metros");
+            },
+            (error) => {
+                console.error("Error GPS:", error);
+            },
+            options
+        );
+    }
+
+    function marcar(tipo) {
+        const dni = document.getElementById('dni').value.trim();
+
+        if (!dni) {
+            mostrarError('Por favor, ingresa tu DNI');
+            return;
+        }
+
+        // Validar ubicación
+        if (!currentPosition) {
+            mostrarError("No se pudo obtener tu ubicación. Activa el GPS.");
+            return;
+        }
+
+        // Validar precisión para evitar ubicación por IP
+        if (currentPosition.accuracy > 50) {
+            mostrarError(
+                `La ubicación no es precisa (precisión: ${currentPosition.accuracy.toFixed(0)}m). ` +
+                `Activa el GPS y espera unos segundos.`
+            );
+            return;
+        }
+
+        procesarMarcacion(dni, tipo);
+    }
+
+    function procesarMarcacion(dni, tipo) {
+        mostrarLoading();
+
+        const formData = new FormData();
+        formData.append('dni', dni);
+        formData.append('tipo', tipo);
+        formData.append('lat', currentPosition.lat);
+        formData.append('lng', currentPosition.lng);
+        formData.append('accuracy', currentPosition.accuracy);
+
+        fetch('procesar_marcacion.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                mostrarModalExito(data.data, tipo);
+                document.getElementById('dni').value = '';
+            } else {
+                mostrarModalError(data.message);
+            }
+        })
+        .catch(() => {
+            mostrarModalError('Error de conexión. Intenta nuevamente.');
+        });
+    }
+
+    function mostrarModalExito(data, tipo) {
+        const iconos = {
+            'entrada': '✅',
+            'salida': '👋',
+            'salida_refrigerio': '☕',
+            'entrada_refrigerio': '🍽️',
+            'entrada_campo': '🚗',
+            'salida_campo': '🏢'
         };
 
-        if (navigator.geolocation) {
-            // Pasar la función de éxito, la función de error y el objeto de opciones
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    currentPosition = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    // Opcional: Puedes verificar la precisión en metros con position.coords.accuracy
-                    console.log('Precisión de la ubicación:', position.coords.accuracy, 'metros');
-                },
-                (error) => {
-                    console.error('Error al obtener ubicación:', error);
-                    // También puedes gestionar diferentes tipos de errores (ej. timeout o permiso denegado)
-                    // console.error(`ERROR(${error.code}): ${error.message}`);
-                },
-                options // Aquí se pasa el objeto de opciones
-            );
-        }
+        const titulos = {
+            'entrada': 'Entrada Registrada',
+            'salida': 'Salida Registrada',
+            'salida_refrigerio': 'Salida a Refrigerio',
+            'entrada_refrigerio': 'Regreso de Refrigerio',
+            'entrada_campo': 'Salida a Campo',
+            'salida_campo': 'Regreso de Campo'
+        };
 
-        function marcar(tipo) {
-            const dni = document.getElementById('dni').value.trim();
-            
-            if (!dni) {
-                mostrarError('Por favor, ingresa tu DNI');
-                return;
-            }
+        document.getElementById('modalIcon').textContent = iconos[tipo];
+        document.getElementById('modalTitle').textContent = titulos[tipo];
 
-            if (!currentPosition) {
-                if (confirm('No se pudo obtener tu ubicación. ¿Deseas intentar nuevamente?')) {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            currentPosition = {
-                                lat: position.coords.latitude,
-                                lng: position.coords.longitude
-                            };
-                            procesarMarcacion(dni, tipo);
-                        },
-                        (error) => {
-                            alert('No se puede marcar sin ubicación. Por favor, habilita la geolocalización.');
-                        }
-                    );
-                }
-                return;
-            }
+        document.getElementById('modalBody').innerHTML = `
+            <div class="modal-info">
+                <p><strong>Empleado:</strong> ${data.nombre}</p>
+                <p><strong>DNI:</strong> ${data.dni}</p>
+                <p><strong>Fecha:</strong> ${data.fecha}</p>
+                <p><strong>Hora:</strong> ${data.hora}</p>
+                <p><strong>Ubicación:</strong> ${data.direccion || 'Obteniendo dirección...'}</p>
+                <p><strong>Coordenadas:</strong> ${data.latitud}, ${data.longitud}</p>
+                <p><strong>Precisión GPS:</strong> ${currentPosition.accuracy.toFixed(0)} metros</p>
+            </div>
+            <p style="color: #059669; font-weight: 600;">¡Marcación exitosa!</p>
+        `;
 
-            procesarMarcacion(dni, tipo);
-        }
+        document.getElementById('marcacionModal').style.display = 'block';
+    }
 
-        function procesarMarcacion(dni, tipo) {
-            mostrarLoading();
+    function mostrarModalError(mensaje) {
+        document.getElementById('modalIcon').textContent = '❌';
+        document.getElementById('modalTitle').textContent = 'Error';
+        document.getElementById('modalBody').innerHTML = `<div class="error">${mensaje}</div>`;
+        document.getElementById('marcacionModal').style.display = 'block';
+    }
 
-            const formData = new FormData();
-            formData.append('dni', dni);
-            formData.append('tipo', tipo);
-            formData.append('lat', currentPosition.lat);
-            formData.append('lng', currentPosition.lng);
+    function mostrarLoading() {
+        document.getElementById('modalIcon').textContent = '';
+        document.getElementById('modalTitle').textContent = 'Procesando...';
+        document.getElementById('modalBody').innerHTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 15px;">Registrando marcación...</p>
+            </div>
+        `;
+        document.getElementById('marcacionModal').style.display = 'block';
+    }
 
-            fetch('procesar_marcacion.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    mostrarModalExito(data.data, tipo);
-                    document.getElementById('dni').value = '';
-                } else {
-                    mostrarModalError(data.message);
-                }
-            })
-            .catch(error => {
-                mostrarModalError('Error de conexión. Intenta nuevamente.');
-            });
-        }
+    function mostrarError(mensaje) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.innerHTML = `<div class="error">${mensaje}</div>`;
+        setTimeout(() => messageDiv.innerHTML = '', 3000);
+    }
 
-        function mostrarModalExito(data, tipo) {
-            const iconos = {
-                'entrada': '✅',
-                'salida': '👋',
-                'salida_refrigerio': '☕',
-                'entrada_refrigerio': '🍽️',
-                'entrada_campo': '🚗',
-                'salida_campo': '🏢'
-            };
+    function cerrarModal() {
+        document.getElementById('marcacionModal').style.display = 'none';
+    }
 
-            const titulos = {
-                'entrada': 'Entrada Registrada',
-                'salida': 'Salida Registrada',
-                'salida_refrigerio': 'Salida a Refrigerio',
-                'entrada_refrigerio': 'Regreso de Refrigerio',
-                'entrada_campo': 'Salida a Campo',
-                'salida_campo': 'Regreso de Campo'
-            };
+    window.onclick = function(event) {
+        const modal = document.getElementById('marcacionModal');
+        if (event.target == modal) cerrarModal();
+    }
+</script>
 
-            document.getElementById('modalIcon').textContent = iconos[tipo];
-            document.getElementById('modalTitle').textContent = titulos[tipo];
-            document.getElementById('modalBody').innerHTML = `
-                <div class="modal-info">
-                    <p><strong>Empleado:</strong> ${data.nombre}</p>
-                    <p><strong>DNI:</strong> ${data.dni}</p>
-                    <p><strong>Fecha:</strong> ${data.fecha}</p>
-                    <p><strong>Hora:</strong> ${data.hora}</p>
-                    <p><strong>Ubicación:</strong> ${data.direccion || 'Obteniendo dirección...'}</p>
-                    <p><strong>Coordenadas:</strong> ${data.latitud}, ${data.longitud}</p>
-                </div>
-                <p style="color: #059669; font-weight: 600;">¡Marcación exitosa!</p>
-            `;
-
-            document.getElementById('marcacionModal').style.display = 'block';
-        }
-
-        function mostrarModalError(mensaje) {
-            document.getElementById('modalIcon').textContent = '❌';
-            document.getElementById('modalTitle').textContent = 'Error';
-            document.getElementById('modalBody').innerHTML = `
-                <div class="error">
-                    ${mensaje}
-                </div>
-            `;
-            document.getElementById('marcacionModal').style.display = 'block';
-        }
-
-        function mostrarLoading() {
-            document.getElementById('modalIcon').textContent = '';
-            document.getElementById('modalTitle').textContent = 'Procesando...';
-            document.getElementById('modalBody').innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top: 15px;">Registrando marcación...</p></div>';
-            document.getElementById('marcacionModal').style.display = 'block';
-        }
-
-        function mostrarError(mensaje) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.innerHTML = `<div class="error">${mensaje}</div>`;
-            setTimeout(() => {
-                messageDiv.innerHTML = '';
-            }, 3000);
-        }
-
-        function cerrarModal() {
-            document.getElementById('marcacionModal').style.display = 'none';
-        }
-
-        // Cerrar modal al hacer clic fuera
-        window.onclick = function(event) {
-            const modal = document.getElementById('marcacionModal');
-            if (event.target == modal) {
-                cerrarModal();
-            }
-        }
-    </script>
 </body>
 </html>
