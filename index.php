@@ -66,7 +66,7 @@ require_once 'config.php';
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        /* Botón de envío que estará oculto */
+        /* Botón de envío ahora visible */
         .btn-dni {
             background: #667eea;
             color: white;
@@ -296,7 +296,7 @@ require_once 'config.php';
 <body>
     <div class="container">
         <h1>🕐 <?php echo SITE_NAME; ?></h1>
-        <p class="subtitle">Ingresa tu DNI para continuar</p>
+        <p class="subtitle">Ingresa tu DNI y presiona "Marcar"</p>
         
         <div id="message"></div>
         
@@ -306,8 +306,8 @@ require_once 'config.php';
                 <input type="text" id="dni" name="dni" placeholder="Ej: 12345678" maxlength="20" required autofocus>
             </div>
             
-            <button type="submit" class="btn-dni" style="display: none;">
-                Validar DNI
+            <button type="submit" class="btn-dni">
+                Marcar
             </button>
         </form>
         
@@ -392,15 +392,7 @@ require_once 'config.php';
         );
     }
 
-    // --- DISPARADOR AUTOMÁTICO: BLUR (al perder el foco) ---
-    dniInput.addEventListener('blur', function() {
-        // Ejecuta la validación solo si el campo tiene suficientes caracteres
-        if (this.value.trim().length >= 5) {
-            validarDniYMostrarOpciones();
-        }
-    });
-
-    // --- DISPARADOR MANUAL: SUBMIT (al presionar Enter) ---
+    // --- DISPARADOR: SUBMIT (al presionar Enter o el botón "Marcar") ---
     document.getElementById('dniForm').addEventListener('submit', function(e) {
         e.preventDefault();
         validarDniYMostrarOpciones();
