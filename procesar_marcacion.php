@@ -31,6 +31,26 @@ if ($lat === null || $lng === null) {
     jsonResponse(false, 'No se pudo obtener la ubicación');
 }
 
+
+# ----------------------------------------
+# VALIDAR SOLO DNI (sin registrar marcación)
+# ----------------------------------------
+if (isset($_POST['validar'])) {
+
+    $dni = $_POST['dni'];
+
+    $q = $pdo->prepare("SELECT id FROM empleados WHERE dni = ?");
+    $q->execute([$dni]);
+
+    if ($q->rowCount() > 0) {
+        echo json_encode(["success" => true]);
+    } else {
+        echo json_encode(["success" => false]);
+    }
+    exit;
+}
+
+
 try {
     $db = new Database();
     $conn = $db->getConnection();
