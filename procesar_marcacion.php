@@ -13,7 +13,7 @@ $tipo = isset($_POST['tipo']) ? sanitize($_POST['tipo']) : '';
 $lat = isset($_POST['lat']) ? floatval($_POST['lat']) : null;
 $lng = isset($_POST['lng']) ? floatval($_POST['lng']) : null;
 
-// Validaciones del DNI (necesarias para ambas rutas: validar y marcar)
+// Validaciones del DNI (necesarias para ambas rutas)
 if (empty($dni)) {
     jsonResponse(false, 'Por favor, ingresa tu DNI');
 }
@@ -24,14 +24,18 @@ if (empty($dni)) {
 # ----------------------------------------
 if (isset($_POST['validar'])) {
 
-    // Nota: El parámetro $dni ya fue sanitizado arriba.
-    
-    // Asumiendo que $pdo está disponible (de config.php o global)
-    global $pdo; 
-    
-    // Usaremos un TRY-CATCH para asegurarnos de que el PDO sea válido
     try {
-        $q = $pdo->prepare("SELECT dni, nombres, apellidos FROM empleados WHERE dni = ?");
+        // Usamos la clase Database para obtener la conexión
+        $db = new Database();
+        $conn = $db->getConnection(); 
+        
+        // La conexión fallará si las credenciales en config.php son incorrectas.
+        if (!$conn) {
+             jsonResponse(false, 'Error interno: No se pudo establecer la conexión a la base de datos.');
+        }
+
+        // Buscamos en la tabla 'usuarios' para obtener el nombre completo
+        $q = $conn->prepare("SELECT dni, nombres, apellidos FROM usuarios WHERE dni = ? LIMIT 1");
         $q->execute([$dni]);
     
         if ($q->rowCount() > 0) {
@@ -39,16 +43,15 @@ if (isset($_POST['validar'])) {
             $nombre_completo = $empleado['nombres'] . ' ' . $empleado['apellidos'];
 
             // Devolvemos el nombre para el modal
-            echo json_encode(["success" => true, "data" => ["nombre" => $nombre_completo]]);
+            jsonResponse(true, 'DNI validado', ["nombre" => $nombre_completo]);
         } else {
-            echo json_encode(["success" => false, "message" => "DNI no encontrado."]);
+            jsonResponse(false, "DNI no encontrado. Por favor, verifica tu número.");
         }
     } catch(PDOException $e) {
-        // En caso de error de conexión o consulta durante la validación
-        echo json_encode(["success" => false, "message" => "Error de base de datos al validar DNI."]);
+        // Error de conexión o consulta durante la validación
+        jsonResponse(false, "Error de base de datos al validar DNI: " . $e->getMessage());
     }
-    
-    exit;
+    // No necesitamos exit() aquí porque jsonResponse ya lo incluye.
 }
 
 
@@ -56,46 +59,46 @@ if (isset($_POST['validar'])) {
 # RUTA 2: REGISTRAR MARCACIÓN
 # ----------------------------------------
 
-// A partir de aquí, la marcación es obligatoria, validamos los parámetros adicionales
+// A partir de aquí, es obligatorio el tipo y la ubicación.
 
-// Validación del TIPO y Ubicación movida aquí:
-if (empty($tipo)) {
-    // Esto se lanza si no se envió 'validar' y el tipo está vacío (lo cual es incorrecto para una marcación)
+// Validación del TIPO
+$tiposValidos = ['entrada', 'salida', 'entrada_refrigerio', 'salida_refrigerio', 'entrada_campo', 'salida_campo'];
+if (empty($tipo) || !in_array($tipo, $tiposValidos)) {
     jsonResponse(false, 'Tipo de marcación no válido. Selecciona una opción del modal.');
 }
 
-$tiposValidos = ['entrada', 'salida', 'entrada_refrigerio', 'salida_refrigerio', 'entrada_campo', 'salida_campo'];
-if (!in_array($tipo, $tiposValidos)) {
-    jsonResponse(false, 'Tipo de marcación no válido');
-}
-
+// Validación de la Ubicación
 if ($lat === null || $lng === null) {
     jsonResponse(false, 'No se pudo obtener la ubicación. Verifica el GPS.');
 }
 
 
 try {
-    // Usamos el mismo patrón que el ejemplo anterior para obtener la conexión
+    // Obtenemos la conexión nuevamente para la marcación
     $db = new Database();
-    $conn = $db->getConnection();
+    $conn = $db->getConnection(); 
     
-    // Verificar si el usuario existe (usando la tabla correcta: 'usuarios')
+    if (!$conn) {
+        jsonResponse(false, 'Error interno: No se pudo establecer la conexión a la base de datos.');
+    }
+
+    // 1. Verificar si el usuario existe y está activo
     $stmt = $conn->prepare("SELECT id, nombres, apellidos, estado FROM usuarios WHERE dni = ? LIMIT 1");
     $stmt->execute([$dni]);
     $usuario = $stmt->fetch();
     
     if (!$usuario) {
-        jsonResponse(false, 'DNI no válido. El usuario no existe en el sistema. Por favor, verifica tu DNI o contacta al administrador.');
+        jsonResponse(false, 'DNI no válido. El usuario no existe en el sistema.');
     }
     
     if ($usuario['estado'] !== 'activo') {
         jsonResponse(false, 'Usuario inactivo. Contacta al administrador.');
     }
     
-    // Obtener dirección de las coordenadas (Asumiendo que getAddressFromCoordinates está definido en config.php)
+    // 2. Obtener dirección de las coordenadas (función de config.php)
     $direccion = getAddressFromCoordinates($lat, $lng);
     
-    // Registrar marcación
+    // 3. Registrar marcación
     $fecha = date('Y-m-d');
     $hora = date('H:i:s');
     
@@ -115,7 +118,7 @@ try {
         $direccion
     ]);
     
-    // Función de formato (Asumiendo que formatTipoMarcacion está definido en config.php)
+    // 4. Respuesta de éxito
     jsonResponse(true, 'Marcación registrada exitosamente', [
         'nombre' => $usuario['nombres'] . ' ' . $usuario['apellidos'],
         'dni' => $dni,
