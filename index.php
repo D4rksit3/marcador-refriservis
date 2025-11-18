@@ -343,20 +343,20 @@ require_once 'config.php';
                     <button type="button" class="btn btn-entrada" data-tipo="entrada">
                         🟢 Entrada
                     </button>
-                    <button type="button" class="btn btn-salida" data-tipo="salida">
-                        🔴 Salida
+                    <button type="button" class="btn btn-refrigerio-in" data-tipo="entrada_refrigerio">
+                        🍽️ Entrada Refrigerio
                     </button>
                     <button type="button" class="btn btn-refrigerio-out" data-tipo="salida_refrigerio">
                         ☕ Salida Refrigerio
                     </button>
-                    <button type="button" class="btn btn-refrigerio-in" data-tipo="entrada_refrigerio">
-                        🍽️ Entrada Refrigerio
+                    <button type="button" class="btn btn-campo-in" data-tipo="entrada_campo">
+                        🏢 Entrada Campo
                     </button>
                     <button type="button" class="btn btn-campo-out" data-tipo="salida_campo">
                         🚗 Salida Campo
                     </button>
-                    <button type="button" class="btn btn-campo-in" data-tipo="entrada_campo">
-                        🏢 Regreso Campo
+                    <button type="button" class="btn btn-salida" data-tipo="salida">
+                        🔴 Salida
                     </button>
                 </div>
             </div>
