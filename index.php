@@ -461,7 +461,7 @@ require_once 'config.php';
         })
         .catch(() => {
             cerrarModal();
-            mostrarModalError('Error de conexión con el servidor (procesar_marcacion.php).');
+            mostrarModalError('Error de conexión con el servidor.');
             dniInput.value = '';
         });
     }
@@ -537,9 +537,9 @@ require_once 'config.php';
             'entrada': 'Entrada Registrada',
             'salida': 'Salida Registrada',
             'salida_refrigerio': 'Salida a Refrigerio',
-            'entrada_refrigerio': 'Regreso de Refrigerio',
+            'entrada_refrigerio': 'Entrada Refrigerio',
             'salida_campo': 'Salida a Campo',
-            'entrada_campo': 'Regreso de Campo'
+            'entrada_campo': 'Entrada Campo'
         };
 
         document.getElementById('modalIcon').textContent = iconos[tipo];
