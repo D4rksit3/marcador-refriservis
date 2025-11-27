@@ -25,12 +25,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $cargo = sanitize($_POST['cargo']);
             $departamento = sanitize($_POST['departamento']);
             $fecha_ingreso = sanitize($_POST['fecha_ingreso']);
+            $horario_entrada = sanitize($_POST['horario_entrada']);
+            $horario_salida = sanitize($_POST['horario_salida']);
+            $tolerancia_minutos = intval($_POST['tolerancia_minutos']);
             
             $stmt = $conn->prepare("
-                INSERT INTO usuarios (dni, nombres, apellidos, correo, telefono, cargo, departamento, fecha_ingreso) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO usuarios (dni, nombres, apellidos, correo, telefono, cargo, departamento, fecha_ingreso, horario_entrada, horario_salida, tolerancia_minutos) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$dni, $nombres, $apellidos, $correo, $telefono, $cargo, $departamento, $fecha_ingreso]);
+            $stmt->execute([$dni, $nombres, $apellidos, $correo, $telefono, $cargo, $departamento, $fecha_ingreso, $horario_entrada, $horario_salida, $tolerancia_minutos]);
             
             $mensaje = 'Usuario agregado exitosamente';
             $tipo_mensaje = 'success';
@@ -45,15 +48,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $cargo = sanitize($_POST['cargo']);
             $departamento = sanitize($_POST['departamento']);
             $fecha_ingreso = sanitize($_POST['fecha_ingreso']);
+            $horario_entrada = sanitize($_POST['horario_entrada']);
+            $horario_salida = sanitize($_POST['horario_salida']);
+            $tolerancia_minutos = intval($_POST['tolerancia_minutos']);
             $estado = sanitize($_POST['estado']);
             
             $stmt = $conn->prepare("
                 UPDATE usuarios 
                 SET dni = ?, nombres = ?, apellidos = ?, correo = ?, telefono = ?, 
-                    cargo = ?, departamento = ?, fecha_ingreso = ?, estado = ?
+                    cargo = ?, departamento = ?, fecha_ingreso = ?, horario_entrada = ?, horario_salida = ?, tolerancia_minutos = ?, estado = ?
                 WHERE id = ?
             ");
-            $stmt->execute([$dni, $nombres, $apellidos, $correo, $telefono, $cargo, $departamento, $fecha_ingreso, $estado, $id]);
+            $stmt->execute([$dni, $nombres, $apellidos, $correo, $telefono, $cargo, $departamento, $fecha_ingreso, $horario_entrada, $horario_salida, $tolerancia_minutos, $estado, $id]);
             
             $mensaje = 'Usuario actualizado exitosamente';
             $tipo_mensaje = 'success';
@@ -155,6 +161,7 @@ include 'includes/header.php';
                     <th>Correo</th>
                     <th>Cargo</th>
                     <th>Departamento</th>
+                    <th>Horario</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
@@ -169,6 +176,19 @@ include 'includes/header.php';
                             <td><?php echo htmlspecialchars($usuario['cargo']); ?></td>
                             <td><?php echo htmlspecialchars($usuario['departamento']); ?></td>
                             <td>
+                                <small style="color: #059669; font-weight: 600;">
+                                    🟢 <?php echo date('H:i', strtotime($usuario['horario_entrada'])); ?>
+                                </small>
+                                <small style="color: #666;"> - </small>
+                                <small style="color: #ef4444; font-weight: 600;">
+                                    🔴 <?php echo date('H:i', strtotime($usuario['horario_salida'])); ?>
+                                </small>
+                                <br>
+                                <small style="color: #f59e0b; font-size: 11px;">
+                                    ⏱️ Tolerancia: <?php echo $usuario['tolerancia_minutos']; ?> min
+                                </small>
+                            </td>
+                            <td>
                                 <span class="badge badge-<?php echo $usuario['estado'] === 'activo' ? 'success' : 'danger'; ?>">
                                     <?php echo ucfirst($usuario['estado']); ?>
                                 </span>
@@ -181,7 +201,7 @@ include 'includes/header.php';
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="7" style="text-align: center; color: #999;">No se encontraron usuarios</td>
+                        <td colspan="8" style="text-align: center; color: #999;">No se encontraron usuarios</td>
                     </tr>
                 <?php endif; ?>
             </tbody>
@@ -245,6 +265,30 @@ include 'includes/header.php';
                     </div>
                 </div>
                 
+                <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; border-left: 4px solid #0ea5e9; margin-bottom: 20px;">
+                    <h4 style="color: #0369a1; margin-bottom: 10px; font-size: 16px;">⏰ Configuración de Horario</h4>
+                    <p style="color: #0c4a6e; font-size: 13px; margin-bottom: 15px;">Define el horario laboral para calcular tardanzas y horas extras automáticamente</p>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="horario_entrada">⏰ Hora de Entrada: *</label>
+                            <input type="time" name="horario_entrada" id="horario_entrada" class="form-control" value="09:00" required>
+                            <small style="color: #64748b; font-size: 12px;">Hora programada de inicio de labores</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="horario_salida">🏁 Hora de Salida: *</label>
+                            <input type="time" name="horario_salida" id="horario_salida" class="form-control" value="18:00" required>
+                            <small style="color: #64748b; font-size: 12px;">Hora programada de fin de labores</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="tolerancia_minutos">⏱️ Tolerancia (minutos): *</label>
+                        <input type="number" name="tolerancia_minutos" id="tolerancia_minutos" class="form-control" value="15" min="0" max="60" required>
+                        <small style="color: #64748b; font-size: 12px;">Minutos de gracia después de la hora de entrada sin contar como tardanza</small>
+                    </div>
+                </div>
+                
                 <div class="form-group" id="estadoGroup" style="display: none;">
                     <label for="estado">Estado:</label>
                     <select name="estado" id="estado" class="form-control">
@@ -273,6 +317,10 @@ function abrirModalAgregar() {
     document.getElementById('accion').value = 'agregar';
     document.getElementById('formUsuario').reset();
     document.getElementById('estadoGroup').style.display = 'none';
+    // Establecer valores por defecto para horarios
+    document.getElementById('horario_entrada').value = '09:00';
+    document.getElementById('horario_salida').value = '18:00';
+    document.getElementById('tolerancia_minutos').value = '15';
     document.getElementById('modalUsuario').style.display = 'block';
 }
 
@@ -288,6 +336,9 @@ function editarUsuario(usuario) {
     document.getElementById('cargo').value = usuario.cargo || '';
     document.getElementById('departamento').value = usuario.departamento || '';
     document.getElementById('fecha_ingreso').value = usuario.fecha_ingreso || '';
+    document.getElementById('horario_entrada').value = usuario.horario_entrada || '09:00:00';
+    document.getElementById('horario_salida').value = usuario.horario_salida || '18:00:00';
+    document.getElementById('tolerancia_minutos').value = usuario.tolerancia_minutos || 15;
     document.getElementById('estado').value = usuario.estado;
     document.getElementById('estadoGroup').style.display = 'block';
     document.getElementById('modalUsuario').style.display = 'block';
@@ -312,4 +363,4 @@ window.onclick = function(event) {
 }
 </script>
 
-<?php include 'includes/footer.php'; ?>s
+<?php include 'includes/footer.php'; ?>

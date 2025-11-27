@@ -57,10 +57,10 @@ if (isset($_GET['exportar'])) {
         echo '<table border="1">';
         echo '<thead><tr style="background-color: #667eea; color: white; font-weight: bold;">';
         echo '<th>DNI</th><th>Empleado</th><th>Cargo</th><th>Departamento</th><th>Fecha</th>';
-        echo '<th>Entrada</th><th>Ubicación Entrada</th>';
-        echo '<th>Salida Refrigerio</th><th>Entrada Refrigerio</th>';
+        echo '<th>Horario</th><th>Entrada</th><th>Ubicación Entrada</th>';
+        echo '<th>Tardanza</th><th>Salida Refrigerio</th><th>Entrada Refrigerio</th>';
         echo '<th>Entrada Campo</th><th>Salida Campo</th>';
-        echo '<th>Salida</th><th>Ubicación Salida</th>';
+        echo '<th>Salida</th><th>Horas Extras</th><th>Ubicación Salida</th>';
         echo '</tr></thead><tbody>';
         
         foreach($datos as $row) {
@@ -70,13 +70,38 @@ if (isset($_GET['exportar'])) {
             echo '<td>' . htmlspecialchars($row['cargo']) . '</td>';
             echo '<td>' . htmlspecialchars($row['departamento']) . '</td>';
             echo '<td>' . date('d/m/Y', strtotime($row['fecha'])) . '</td>';
+            echo '<td>' . date('H:i', strtotime($row['horario_entrada'])) . ' - ' . date('H:i', strtotime($row['horario_salida'])) . '</td>';
             echo '<td>' . ($row['entrada'] ? date('h:i A', strtotime($row['entrada'])) : '-') . '</td>';
             echo '<td>' . htmlspecialchars($row['direccion_entrada'] ?? '-') . '</td>';
+            
+            // Tardanza
+            $tardanza = intval($row['minutos_tardanza']);
+            if ($tardanza > 0) {
+                $horas = floor($tardanza / 60);
+                $mins = $tardanza % 60;
+                $tardanza_texto = ($horas > 0 ? $horas . 'h ' : '') . $mins . 'm';
+                echo '<td style="color: #ef4444; font-weight: bold;">' . $tardanza_texto . '</td>';
+            } else {
+                echo '<td style="color: #10b981;">A tiempo</td>';
+            }
+            
             echo '<td>' . ($row['salida_refrigerio'] ? date('h:i A', strtotime($row['salida_refrigerio'])) : '-') . '</td>';
             echo '<td>' . ($row['entrada_refrigerio'] ? date('h:i A', strtotime($row['entrada_refrigerio'])) : '-') . '</td>';
             echo '<td>' . ($row['entrada_campo'] ? date('h:i A', strtotime($row['entrada_campo'])) : '-') . '</td>';
             echo '<td>' . ($row['salida_campo'] ? date('h:i A', strtotime($row['salida_campo'])) : '-') . '</td>';
             echo '<td>' . ($row['salida'] ? date('h:i A', strtotime($row['salida'])) : '-') . '</td>';
+            
+            // Horas extras
+            $extras = intval($row['minutos_extras']);
+            if ($extras > 0) {
+                $horas = floor($extras / 60);
+                $mins = $extras % 60;
+                $extras_texto = ($horas > 0 ? $horas . 'h ' : '') . $mins . 'm';
+                echo '<td style="color: #8b5cf6; font-weight: bold;">' . $extras_texto . '</td>';
+            } else {
+                echo '<td>-</td>';
+            }
+            
             echo '<td>' . htmlspecialchars($row['direccion_salida'] ?? '-') . '</td>';
             echo '</tr>';
         }
@@ -214,12 +239,15 @@ include 'includes/header.php';
                     <th>Empleado</th>
                     <th>Cargo</th>
                     <th>Fecha</th>
+                    <th>Horario</th>
                     <th>Entrada</th>
+                    <th>Tardanza</th>
                     <th>Sal. Refri.</th>
                     <th>Ent. Refri.</th>
                     <th>Ent. Campo</th>
                     <th>Sal. Campo</th>
                     <th>Salida</th>
+                    <th>H. Extras</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -234,12 +262,44 @@ include 'includes/header.php';
                             </td>
                             <td><?php echo htmlspecialchars($reporte['cargo']); ?></td>
                             <td><?php echo date('d/m/Y', strtotime($reporte['fecha'])); ?></td>
+                            <td>
+                                <small style="color: #666;">
+                                    <?php echo date('H:i', strtotime($reporte['horario_entrada'])); ?> - 
+                                    <?php echo date('H:i', strtotime($reporte['horario_salida'])); ?>
+                                </small>
+                            </td>
                             <td><?php echo $reporte['entrada'] ? '<span style="color: #10b981;">' . date('h:i A', strtotime($reporte['entrada'])) . '</span>' : '-'; ?></td>
+                            <td>
+                                <?php 
+                                $tardanza = intval($reporte['minutos_tardanza']);
+                                if ($tardanza > 0) {
+                                    $horas = floor($tardanza / 60);
+                                    $mins = $tardanza % 60;
+                                    $tardanza_texto = ($horas > 0 ? $horas . 'h ' : '') . $mins . 'm';
+                                    echo '<span style="color: #ef4444; font-weight: 600;">⏱️ ' . $tardanza_texto . '</span>';
+                                } else {
+                                    echo '<span style="color: #10b981;">✓ A tiempo</span>';
+                                }
+                                ?>
+                            </td>
                             <td><?php echo $reporte['salida_refrigerio'] ? date('h:i A', strtotime($reporte['salida_refrigerio'])) : '-'; ?></td>
                             <td><?php echo $reporte['entrada_refrigerio'] ? date('h:i A', strtotime($reporte['entrada_refrigerio'])) : '-'; ?></td>
                             <td><?php echo $reporte['entrada_campo'] ? date('h:i A', strtotime($reporte['entrada_campo'])) : '-'; ?></td>
                             <td><?php echo $reporte['salida_campo'] ? date('h:i A', strtotime($reporte['salida_campo'])) : '-'; ?></td>
                             <td><?php echo $reporte['salida'] ? '<span style="color: #ef4444;">' . date('h:i A', strtotime($reporte['salida'])) . '</span>' : '-'; ?></td>
+                            <td>
+                                <?php 
+                                $extras = intval($reporte['minutos_extras']);
+                                if ($extras > 0) {
+                                    $horas = floor($extras / 60);
+                                    $mins = $extras % 60;
+                                    $extras_texto = ($horas > 0 ? $horas . 'h ' : '') . $mins . 'm';
+                                    echo '<span style="color: #8b5cf6; font-weight: 600;">⭐ ' . $extras_texto . '</span>';
+                                } else {
+                                    echo '-';
+                                }
+                                ?>
+                            </td>
                             <td>
                                 <button class="btn btn-info btn-sm" onclick='verDetalle(<?php echo json_encode($reporte, JSON_UNESCAPED_UNICODE); ?>)'>
                                     👁️ Ver
@@ -285,11 +345,25 @@ function verDetalle(reporte) {
     html += '<p><strong>Cargo:</strong> ' + reporte.cargo + '</p>';
     html += '<p><strong>Departamento:</strong> ' + reporte.departamento + '</p>';
     html += '<p><strong>Fecha:</strong> ' + new Date(reporte.fecha).toLocaleDateString('es-PE') + '</p>';
+    html += '<p><strong>Horario:</strong> ' + reporte.horario_entrada.substring(0,5) + ' - ' + reporte.horario_salida.substring(0,5) + '</p>';
+    html += '<p><strong>Tolerancia:</strong> ' + reporte.tolerancia_minutos + ' minutos</p>';
     html += '</div>';
     
     html += '<div style="background: #d1fae5; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">';
     html += '<h3 style="margin-bottom: 10px; color: #059669;">🟢 Entrada</h3>';
     html += '<p><strong>Hora:</strong> ' + (reporte.entrada || 'No registrada') + '</p>';
+    
+    // Mostrar tardanza
+    let tardanza = parseInt(reporte.minutos_tardanza);
+    if (tardanza > 0) {
+        let horas = Math.floor(tardanza / 60);
+        let mins = tardanza % 60;
+        let tardanza_texto = (horas > 0 ? horas + 'h ' : '') + mins + 'm';
+        html += '<p style="color: #ef4444; font-weight: bold;"><strong>⏱️ Tardanza:</strong> ' + tardanza_texto + '</p>';
+    } else {
+        html += '<p style="color: #10b981; font-weight: bold;"><strong>✓ Estado:</strong> A tiempo</p>';
+    }
+    
     if (reporte.direccion_entrada) {
         html += '<p><strong>Ubicación:</strong> ' + reporte.direccion_entrada + '</p>';
     }
@@ -299,13 +373,26 @@ function verDetalle(reporte) {
     }
     html += '</div>';
     
-    if (reporte.salida_refrigerio || reporte.entrada_refrigerio) {
-        html += '<div style="background: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">';
-        html += '<h3 style="margin-bottom: 10px; color: #d97706;">☕ Refrigerio</h3>';
-        html += '<p><strong>Salida:</strong> ' + (reporte.salida_refrigerio || '-') + '</p>';
-        html += '<p><strong>Entrada:</strong> ' + (reporte.entrada_refrigerio || '-') + '</p>';
-        html += '</div>';
+    html += '<div style="background: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">';
+    html += '<h3 style="margin-bottom: 10px; color: #d97706;">☕ Refrigerio</h3>';
+    html += '<p><strong>Salida:</strong> ' + (reporte.salida_refrigerio || '-') + '</p>';
+    if (reporte.direccion_salida_refrigerio) {
+        html += '<p><strong>Ubicación Salida:</strong> ' + reporte.direccion_salida_refrigerio + '</p>';
     }
+    if (reporte.ubicacion_salida_refrigerio) {
+        html += '<p><strong>Coordenadas:</strong> ' + reporte.ubicacion_salida_refrigerio + '</p>';
+        html += '<p><a href="https://www.google.com/maps?q=' + reporte.ubicacion_salida_refrigerio + '" target="_blank" class="btn btn-info btn-sm">Ver en Mapa</a></p>';
+    }
+    html += '<hr style="margin: 10px 0; border: none; border-top: 1px solid #fbbf24;">';
+    html += '<p><strong>Entrada:</strong> ' + (reporte.entrada_refrigerio || '-') + '</p>';
+    if (reporte.direccion_entrada_refrigerio) {
+        html += '<p><strong>Ubicación Entrada:</strong> ' + reporte.direccion_entrada_refrigerio + '</p>';
+    }
+    if (reporte.ubicacion_entrada_refrigerio) {
+        html += '<p><strong>Coordenadas:</strong> ' + reporte.ubicacion_entrada_refrigerio + '</p>';
+        html += '<p><a href="https://www.google.com/maps?q=' + reporte.ubicacion_entrada_refrigerio + '" target="_blank" class="btn btn-info btn-sm">Ver en Mapa</a></p>';
+    }
+    html += '</div>';
     
     if (reporte.entrada_campo || reporte.salida_campo) {
         html += '<div style="background: #dbeafe; padding: 15px; border-radius: 8px; border-left: 4px solid #06b6d4;">';
@@ -314,9 +401,18 @@ function verDetalle(reporte) {
         if (reporte.direccion_entrada_campo) {
             html += '<p><strong>Ubicación:</strong> ' + reporte.direccion_entrada_campo + '</p>';
         }
+        if (reporte.ubicacion_entrada_campo) {
+            html += '<p><strong>Coordenadas:</strong> ' + reporte.ubicacion_entrada_campo + '</p>';
+            html += '<p><a href="https://www.google.com/maps?q=' + reporte.ubicacion_entrada_campo + '" target="_blank" class="btn btn-info btn-sm">Ver en Mapa</a></p>';
+        }
+        html += '<hr style="margin: 10px 0; border: none; border-top: 1px solid #0ea5e9;">';
         html += '<p><strong>Salida:</strong> ' + (reporte.salida_campo || '-') + '</p>';
         if (reporte.direccion_salida_campo) {
             html += '<p><strong>Ubicación:</strong> ' + reporte.direccion_salida_campo + '</p>';
+        }
+        if (reporte.ubicacion_salida_campo) {
+            html += '<p><strong>Coordenadas:</strong> ' + reporte.ubicacion_salida_campo + '</p>';
+            html += '<p><a href="https://www.google.com/maps?q=' + reporte.ubicacion_salida_campo + '" target="_blank" class="btn btn-info btn-sm">Ver en Mapa</a></p>';
         }
         html += '</div>';
     }
@@ -324,6 +420,16 @@ function verDetalle(reporte) {
     html += '<div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">';
     html += '<h3 style="margin-bottom: 10px; color: #dc2626;">🔴 Salida</h3>';
     html += '<p><strong>Hora:</strong> ' + (reporte.salida || 'No registrada') + '</p>';
+    
+    // Mostrar horas extras
+    let extras = parseInt(reporte.minutos_extras);
+    if (extras > 0) {
+        let horas = Math.floor(extras / 60);
+        let mins = extras % 60;
+        let extras_texto = (horas > 0 ? horas + 'h ' : '') + mins + 'm';
+        html += '<p style="color: #8b5cf6; font-weight: bold;"><strong>⭐ Horas Extras:</strong> ' + extras_texto + '</p>';
+    }
+    
     if (reporte.direccion_salida) {
         html += '<p><strong>Ubicación:</strong> ' + reporte.direccion_salida + '</p>';
     }
