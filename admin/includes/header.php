@@ -1,9 +1,9 @@
 <?php
 // admin/includes/header.php
-if (!defined('ADMIN_AREA')) {
+/* if (!defined('ADMIN_AREA')) {
     die('Acceso no autorizado');
 }
-?>
+?> */
 <!DOCTYPE html>
 <html lang="es">
 <head>
