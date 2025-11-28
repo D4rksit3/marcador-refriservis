@@ -1,4 +1,6 @@
 <?php
+define('ADMIN_AREA', true);
+require_once '../config.php';
 // admin/includes/header.php
 if (!defined('ADMIN_AREA')) {
     die('Acceso no autorizado');
