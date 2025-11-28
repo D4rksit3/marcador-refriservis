@@ -1,6 +1,6 @@
 <?php
 // admin/graficas.php
-define('ADMIN_AREA', true);
+
 require_once '../config.php';
 requireAuth();
 
