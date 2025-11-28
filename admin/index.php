@@ -1,20 +1,48 @@
 <?php
 require_once '../config.php';
-if (!isset($_SESSION['admin_id'])) { header('Location: login.php'); exit; }
+
+// Verificar sesión
+if (!isset($_SESSION['admin_id'])) { 
+    header('Location: login.php'); 
+    exit; 
+}
 
 $hoy = date('Y-m-d');
+$justificaciones_hoy = 0;
+$justificaciones_activas = [];
+$tablas_nuevas_instaladas = true;
 
-// Estadísticas
+// Estadísticas básicas (tablas originales)
 $total_empleados = $pdo->query("SELECT COUNT(*) FROM usuarios WHERE estado = 'activo'")->fetchColumn();
+
 $marcaciones_hoy = $pdo->prepare("SELECT COUNT(DISTINCT usuario_id) FROM marcaciones WHERE fecha = ?");
 $marcaciones_hoy->execute([$hoy]);
 $marcaciones_hoy = $marcaciones_hoy->fetchColumn();
 
-$justificaciones_hoy = $pdo->prepare("SELECT COUNT(*) FROM justificaciones WHERE estado = 'aprobada' AND ? BETWEEN fecha_inicio AND fecha_fin");
-$justificaciones_hoy->execute([$hoy]);
-$justificaciones_hoy = $justificaciones_hoy->fetchColumn();
+// Verificar si las tablas nuevas existen
+try {
+    $check = $pdo->query("SELECT 1 FROM justificaciones LIMIT 1");
+    
+    // Si llegamos aquí, las tablas existen
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM justificaciones WHERE estado = 'aprobada' AND ? BETWEEN fecha_inicio AND fecha_fin");
+    $stmt->execute([$hoy]);
+    $justificaciones_hoy = $stmt->fetchColumn();
+    
+    $just_activas = $pdo->prepare("
+        SELECT j.*, CONCAT(u.nombres, ' ', u.apellidos) as nombre, tj.nombre as tipo, tj.color
+        FROM justificaciones j
+        INNER JOIN usuarios u ON j.usuario_id = u.id
+        INNER JOIN tipos_justificacion tj ON j.tipo_justificacion_id = tj.id
+        WHERE j.estado = 'aprobada' AND ? BETWEEN j.fecha_inicio AND j.fecha_fin
+        ORDER BY j.fecha_fin
+    ");
+    $just_activas->execute([$hoy]);
+    $justificaciones_activas = $just_activas->fetchAll();
+} catch (PDOException $e) {
+    $tablas_nuevas_instaladas = false;
+}
 
-// Últimas marcaciones
+// Últimas marcaciones (tabla original)
 $ultimas = $pdo->prepare("
     SELECT m.*, CONCAT(u.nombres, ' ', u.apellidos) as nombre, u.dni
     FROM marcaciones m
@@ -24,23 +52,19 @@ $ultimas = $pdo->prepare("
 $ultimas->execute([$hoy]);
 $ultimas_marcaciones = $ultimas->fetchAll();
 
-// Justificaciones activas
-$just_activas = $pdo->prepare("
-    SELECT j.*, CONCAT(u.nombres, ' ', u.apellidos) as nombre, tj.nombre as tipo, tj.color
-    FROM justificaciones j
-    INNER JOIN usuarios u ON j.usuario_id = u.id
-    INNER JOIN tipos_justificacion tj ON j.tipo_justificacion_id = tj.id
-    WHERE j.estado = 'aprobada' AND ? BETWEEN j.fecha_inicio AND j.fecha_fin
-    ORDER BY j.fecha_fin
-");
-$just_activas->execute([$hoy]);
-$justificaciones_activas = $just_activas->fetchAll();
-
 include 'includes/header.php';
 ?>
 
 <div class="container-fluid py-4">
     <h2 class="mb-4"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
+    
+    <?php if (!$tablas_nuevas_instaladas): ?>
+    <div class="alert alert-warning">
+        <h5><i class="fas fa-exclamation-triangle me-2"></i>Instalación Incompleta</h5>
+        <p class="mb-0">Las tablas nuevas (justificaciones, feriados, etc.) no están instaladas. 
+        Por favor ejecute el script <code>database_mejoras.sql</code> en su base de datos.</p>
+    </div>
+    <?php endif; ?>
     
     <!-- Tarjetas -->
     <div class="row mb-4">
