@@ -1,366 +1,150 @@
 <?php
-// admin/usuarios.php
-define('ADMIN_AREA', true);
 require_once '../config.php';
-requireAuth();
+if (!isset($_SESSION['admin_id'])) { header('Location: login.php'); exit; }
 
-$page_title = 'Gestión de Usuarios';
-$mensaje = '';
-$tipo_mensaje = '';
+$mensaje = ''; $tipo_mensaje = '';
 
-// Procesar acciones
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $accion = $_POST['accion'] ?? '';
+    $action = $_POST['action'] ?? '';
     
-    try {
-        $db = new Database();
-        $conn = $db->getConnection();
+    if ($action === 'crear') {
+        $dni = sanitize($_POST['dni']);
+        $nombres = sanitize($_POST['nombres']);
+        $apellidos = sanitize($_POST['apellidos']);
+        $correo = sanitize($_POST['correo']);
+        $telefono = sanitize($_POST['telefono']);
+        $cargo = sanitize($_POST['cargo']);
+        $departamento = sanitize($_POST['departamento']);
+        $fecha_ingreso = $_POST['fecha_ingreso'];
+        $dia_descanso = (int) $_POST['dia_descanso'];
         
-        if ($accion === 'agregar') {
-            $dni = sanitize($_POST['dni']);
-            $nombres = sanitize($_POST['nombres']);
-            $apellidos = sanitize($_POST['apellidos']);
-            $correo = sanitize($_POST['correo']);
-            $telefono = sanitize($_POST['telefono']);
-            $cargo = sanitize($_POST['cargo']);
-            $departamento = sanitize($_POST['departamento']);
-            $fecha_ingreso = sanitize($_POST['fecha_ingreso']);
-            $horario_entrada = sanitize($_POST['horario_entrada']);
-            $horario_salida = sanitize($_POST['horario_salida']);
-            $tolerancia_minutos = intval($_POST['tolerancia_minutos']);
-            
-            $stmt = $conn->prepare("
-                INSERT INTO usuarios (dni, nombres, apellidos, correo, telefono, cargo, departamento, fecha_ingreso, horario_entrada, horario_salida, tolerancia_minutos) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $stmt->execute([$dni, $nombres, $apellidos, $correo, $telefono, $cargo, $departamento, $fecha_ingreso, $horario_entrada, $horario_salida, $tolerancia_minutos]);
-            
-            $mensaje = 'Usuario agregado exitosamente';
-            $tipo_mensaje = 'success';
+        try {
+            $stmt = $pdo->prepare("INSERT INTO usuarios (dni, nombres, apellidos, correo, telefono, cargo, departamento, fecha_ingreso, dia_descanso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$dni, $nombres, $apellidos, $correo, $telefono, $cargo, $departamento, $fecha_ingreso, $dia_descanso]);
+            $mensaje = 'Usuario creado correctamente'; $tipo_mensaje = 'success';
+        } catch (PDOException $e) {
+            $mensaje = 'Error: DNI o correo ya existe'; $tipo_mensaje = 'danger';
         }
-        elseif ($accion === 'editar') {
-            $id = intval($_POST['id']);
-            $dni = sanitize($_POST['dni']);
-            $nombres = sanitize($_POST['nombres']);
-            $apellidos = sanitize($_POST['apellidos']);
-            $correo = sanitize($_POST['correo']);
-            $telefono = sanitize($_POST['telefono']);
-            $cargo = sanitize($_POST['cargo']);
-            $departamento = sanitize($_POST['departamento']);
-            $fecha_ingreso = sanitize($_POST['fecha_ingreso']);
-            $horario_entrada = sanitize($_POST['horario_entrada']);
-            $horario_salida = sanitize($_POST['horario_salida']);
-            $tolerancia_minutos = intval($_POST['tolerancia_minutos']);
-            $estado = sanitize($_POST['estado']);
-            
-            $stmt = $conn->prepare("
-                UPDATE usuarios 
-                SET dni = ?, nombres = ?, apellidos = ?, correo = ?, telefono = ?, 
-                    cargo = ?, departamento = ?, fecha_ingreso = ?, horario_entrada = ?, horario_salida = ?, tolerancia_minutos = ?, estado = ?
-                WHERE id = ?
-            ");
-            $stmt->execute([$dni, $nombres, $apellidos, $correo, $telefono, $cargo, $departamento, $fecha_ingreso, $horario_entrada, $horario_salida, $tolerancia_minutos, $estado, $id]);
-            
-            $mensaje = 'Usuario actualizado exitosamente';
-            $tipo_mensaje = 'success';
-        }
-        elseif ($accion === 'eliminar') {
-            $id = intval($_POST['id']);
-            $stmt = $conn->prepare("DELETE FROM usuarios WHERE id = ?");
-            $stmt->execute([$id]);
-            
-            $mensaje = 'Usuario eliminado exitosamente';
-            $tipo_mensaje = 'success';
-        }
-    } catch(PDOException $e) {
-        $mensaje = 'Error: ' . $e->getMessage();
-        $tipo_mensaje = 'error';
+    }
+    
+    if ($action === 'editar') {
+        $id = (int) $_POST['id'];
+        $nombres = sanitize($_POST['nombres']);
+        $apellidos = sanitize($_POST['apellidos']);
+        $correo = sanitize($_POST['correo']);
+        $telefono = sanitize($_POST['telefono']);
+        $cargo = sanitize($_POST['cargo']);
+        $departamento = sanitize($_POST['departamento']);
+        $estado = $_POST['estado'];
+        
+        $pdo->prepare("UPDATE usuarios SET nombres=?, apellidos=?, correo=?, telefono=?, cargo=?, departamento=?, estado=? WHERE id=?")
+            ->execute([$nombres, $apellidos, $correo, $telefono, $cargo, $departamento, $estado, $id]);
+        $mensaje = 'Usuario actualizado'; $tipo_mensaje = 'success';
     }
 }
 
-// Obtener usuarios
-try {
-    $db = new Database();
-    $conn = $db->getConnection();
-    
-    $buscar = isset($_GET['buscar']) ? sanitize($_GET['buscar']) : '';
-    $filtro_estado = isset($_GET['estado']) ? sanitize($_GET['estado']) : '';
-    
-    $sql = "SELECT * FROM usuarios WHERE 1=1";
-    $params = [];
-    
-    if (!empty($buscar)) {
-        $sql .= " AND (dni LIKE ? OR nombres LIKE ? OR apellidos LIKE ? OR correo LIKE ?)";
-        $buscar_param = "%{$buscar}%";
-        $params = array_merge($params, [$buscar_param, $buscar_param, $buscar_param, $buscar_param]);
-    }
-    
-    if (!empty($filtro_estado)) {
-        $sql .= " AND estado = ?";
-        $params[] = $filtro_estado;
-    }
-    
-    $sql .= " ORDER BY id DESC";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->execute($params);
-    $usuarios = $stmt->fetchAll();
-    
-} catch(PDOException $e) {
-    die("Error: " . $e->getMessage());
-}
+$usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY estado DESC, apellidos, nombres")->fetchAll();
+$departamentos = $pdo->query("SELECT DISTINCT departamento FROM usuarios WHERE departamento IS NOT NULL AND departamento != '' ORDER BY departamento")->fetchAll(PDO::FETCH_COLUMN);
 
 include 'includes/header.php';
 ?>
-
-<div class="page-header">
-    <h1>👥 Gestión de Usuarios</h1>
-    <p>Administra los empleados del sistema</p>
-</div>
-
-<?php if ($mensaje): ?>
-    <div class="alert alert-<?php echo $tipo_mensaje; ?>">
-        <?php echo $mensaje; ?>
-    </div>
-<?php endif; ?>
-
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">Listado de Usuarios</h2>
-        <button class="btn btn-primary" onclick="abrirModalAgregar()">
-            ➕ Agregar Usuario
-        </button>
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between mb-4">
+        <h2><i class="fas fa-users me-2"></i>Gestión de Usuarios</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrear"><i class="fas fa-plus me-2"></i>Nuevo Usuario</button>
     </div>
     
-    <!-- Filtros -->
-    <form method="GET" style="margin-bottom: 20px;">
-        <div class="form-row">
-            <div class="form-group">
-                <input type="text" name="buscar" class="form-control" placeholder="Buscar por DNI, nombre o correo..." value="<?php echo htmlspecialchars($buscar); ?>">
-            </div>
-            <div class="form-group">
-                <select name="estado" class="form-control">
-                    <option value="">Todos los estados</option>
-                    <option value="activo" <?php echo $filtro_estado === 'activo' ? 'selected' : ''; ?>>Activos</option>
-                    <option value="inactivo" <?php echo $filtro_estado === 'inactivo' ? 'selected' : ''; ?>>Inactivos</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <button type="submit" class="btn btn-info">🔍 Buscar</button>
-                <a href="usuarios.php" class="btn btn-warning">🔄 Limpiar</a>
-            </div>
-        </div>
-    </form>
+    <?php if ($mensaje): ?><div class="alert alert-<?= $tipo_mensaje ?>"><?= $mensaje ?></div><?php endif; ?>
     
-    <div style="overflow-x: auto;">
-        <table>
-            <thead>
-                <tr>
-                    <th>DNI</th>
-                    <th>Nombre Completo</th>
-                    <th>Correo</th>
-                    <th>Cargo</th>
-                    <th>Departamento</th>
-                    <th>Horario</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (count($usuarios) > 0): ?>
-                    <?php foreach($usuarios as $usuario): ?>
-                        <tr>
-                            <td><strong><?php echo htmlspecialchars($usuario['dni']); ?></strong></td>
-                            <td><?php echo htmlspecialchars($usuario['nombres'] . ' ' . $usuario['apellidos']); ?></td>
-                            <td><?php echo htmlspecialchars($usuario['correo']); ?></td>
-                            <td><?php echo htmlspecialchars($usuario['cargo']); ?></td>
-                            <td><?php echo htmlspecialchars($usuario['departamento']); ?></td>
-                            <td>
-                                <small style="color: #059669; font-weight: 600;">
-                                    🟢 <?php echo date('H:i', strtotime($usuario['horario_entrada'])); ?>
-                                </small>
-                                <small style="color: #666;"> - </small>
-                                <small style="color: #ef4444; font-weight: 600;">
-                                    🔴 <?php echo date('H:i', strtotime($usuario['horario_salida'])); ?>
-                                </small>
-                                <br>
-                                <small style="color: #f59e0b; font-size: 11px;">
-                                    ⏱️ Tolerancia: <?php echo $usuario['tolerancia_minutos']; ?> min
-                                </small>
-                            </td>
-                            <td>
-                                <span class="badge badge-<?php echo $usuario['estado'] === 'activo' ? 'success' : 'danger'; ?>">
-                                    <?php echo ucfirst($usuario['estado']); ?>
-                                </span>
-                            </td>
-                            <td>
-                                <button class="btn btn-info btn-sm" onclick='editarUsuario(<?php echo json_encode($usuario); ?>)'>✏️ Editar</button>
-                                <button class="btn btn-danger btn-sm" onclick="eliminarUsuario(<?php echo $usuario['id']; ?>, '<?php echo htmlspecialchars($usuario['nombres']); ?>')">🗑️ Eliminar</button>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="8" style="text-align: center; color: #999;">No se encontraron usuarios</td>
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark"><tr><th>DNI</th><th>Nombre</th><th>Cargo</th><th>Departamento</th><th>Ingreso</th><th>Descanso</th><th>Estado</th><th></th></tr></thead>
+                <tbody>
+                    <?php foreach ($usuarios as $u): ?>
+                    <tr class="<?= $u['estado'] == 'inactivo' ? 'table-secondary' : '' ?>">
+                        <td><?= $u['dni'] ?></td>
+                        <td><strong><?= htmlspecialchars($u['apellidos'] . ', ' . $u['nombres']) ?></strong><br><small class="text-muted"><?= $u['correo'] ?></small></td>
+                        <td><?= htmlspecialchars($u['cargo'] ?? '-') ?></td>
+                        <td><?= htmlspecialchars($u['departamento'] ?? '-') ?></td>
+                        <td><?= $u['fecha_ingreso'] ? formatearFecha($u['fecha_ingreso']) : '-' ?></td>
+                        <td><span class="badge bg-info"><?= getNombreDia($u['dia_descanso'] ?? 0) ?></span></td>
+                        <td><span class="badge bg-<?= $u['estado'] == 'activo' ? 'success' : 'secondary' ?>"><?= ucfirst($u['estado']) ?></span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick='editarUsuario(<?= json_encode($u) ?>)'><i class="fas fa-edit"></i></button>
+                        </td>
                     </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Modal Agregar/Editar Usuario -->
-<div id="modalUsuario" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2 id="modalTitulo">Agregar Usuario</h2>
-            <span class="close-modal" onclick="cerrarModal()">&times;</span>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         </div>
-        <form method="POST" id="formUsuario">
-            <div class="modal-body">
-                <input type="hidden" name="accion" id="accion" value="agregar">
-                <input type="hidden" name="id" id="id">
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="dni">DNI: *</label>
-                        <input type="text" name="dni" id="dni" class="form-control" required maxlength="20">
-                    </div>
-                    <div class="form-group">
-                        <label for="fecha_ingreso">Fecha de Ingreso:</label>
-                        <input type="date" name="fecha_ingreso" id="fecha_ingreso" class="form-control" value="<?php echo date('Y-m-d'); ?>">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="nombres">Nombres: *</label>
-                        <input type="text" name="nombres" id="nombres" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="apellidos">Apellidos: *</label>
-                        <input type="text" name="apellidos" id="apellidos" class="form-control" required>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="correo">Correo Electrónico: *</label>
-                        <input type="email" name="correo" id="correo" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="telefono">Teléfono:</label>
-                        <input type="text" name="telefono" id="telefono" class="form-control" maxlength="20">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="cargo">Cargo:</label>
-                        <input type="text" name="cargo" id="cargo" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label for="departamento">Departamento:</label>
-                        <input type="text" name="departamento" id="departamento" class="form-control">
-                    </div>
-                </div>
-                
-                <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; border-left: 4px solid #0ea5e9; margin-bottom: 20px;">
-                    <h4 style="color: #0369a1; margin-bottom: 10px; font-size: 16px;">⏰ Configuración de Horario</h4>
-                    <p style="color: #0c4a6e; font-size: 13px; margin-bottom: 15px;">Define el horario laboral para calcular tardanzas y horas extras automáticamente</p>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="horario_entrada">⏰ Hora de Entrada: *</label>
-                            <input type="time" name="horario_entrada" id="horario_entrada" class="form-control" value="09:00" required>
-                            <small style="color: #64748b; font-size: 12px;">Hora programada de inicio de labores</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="horario_salida">🏁 Hora de Salida: *</label>
-                            <input type="time" name="horario_salida" id="horario_salida" class="form-control" value="18:00" required>
-                            <small style="color: #64748b; font-size: 12px;">Hora programada de fin de labores</small>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="tolerancia_minutos">⏱️ Tolerancia (minutos): *</label>
-                        <input type="number" name="tolerancia_minutos" id="tolerancia_minutos" class="form-control" value="15" min="0" max="60" required>
-                        <small style="color: #64748b; font-size: 12px;">Minutos de gracia después de la hora de entrada sin contar como tardanza</small>
-                    </div>
-                </div>
-                
-                <div class="form-group" id="estadoGroup" style="display: none;">
-                    <label for="estado">Estado:</label>
-                    <select name="estado" id="estado" class="form-control">
-                        <option value="activo">Activo</option>
-                        <option value="inactivo">Inactivo</option>
-                    </select>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
-                <button type="submit" class="btn btn-success">💾 Guardar</button>
-            </div>
-        </form>
+        <div class="card-footer"><small class="text-muted">Total: <?= count($usuarios) ?> usuarios</small></div>
     </div>
 </div>
 
-<!-- Formulario oculto para eliminar -->
-<form method="POST" id="formEliminar" style="display: none;">
-    <input type="hidden" name="accion" value="eliminar">
-    <input type="hidden" name="id" id="eliminar_id">
-</form>
+<!-- Modal Crear -->
+<div class="modal fade" id="modalCrear" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header bg-primary text-white"><h5 class="modal-title">Nuevo Usuario</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+    <form method="POST"><div class="modal-body">
+        <input type="hidden" name="action" value="crear">
+        <div class="row">
+            <div class="col-md-4 mb-3"><label class="form-label">DNI</label><input type="text" name="dni" class="form-control" maxlength="8" required></div>
+            <div class="col-md-4 mb-3"><label class="form-label">Nombres</label><input type="text" name="nombres" class="form-control" required></div>
+            <div class="col-md-4 mb-3"><label class="form-label">Apellidos</label><input type="text" name="apellidos" class="form-control" required></div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label">Correo</label><input type="email" name="correo" class="form-control" required></div>
+            <div class="col-md-6 mb-3"><label class="form-label">Teléfono</label><input type="text" name="telefono" class="form-control"></div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3"><label class="form-label">Cargo</label><input type="text" name="cargo" class="form-control"></div>
+            <div class="col-md-4 mb-3"><label class="form-label">Departamento</label><input type="text" name="departamento" class="form-control" list="deptos">
+                <datalist id="deptos"><?php foreach ($departamentos as $d): ?><option value="<?= htmlspecialchars($d) ?>"><?php endforeach; ?></datalist>
+            </div>
+            <div class="col-md-4 mb-3"><label class="form-label">Fecha Ingreso</label><input type="date" name="fecha_ingreso" class="form-control"></div>
+        </div>
+        <div class="mb-3"><label class="form-label">Día de Descanso</label>
+            <select name="dia_descanso" class="form-select"><?php for ($i = 0; $i <= 6; $i++): ?><option value="<?= $i ?>"><?= getNombreDia($i) ?></option><?php endfor; ?></select>
+        </div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-primary">Crear Usuario</button></div>
+    </form>
+</div></div></div>
+
+<!-- Modal Editar -->
+<div class="modal fade" id="modalEditar" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header bg-warning"><h5 class="modal-title">Editar Usuario</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form method="POST" id="formEditar"><div class="modal-body">
+        <input type="hidden" name="action" value="editar"><input type="hidden" name="id" id="edit_id">
+        <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label">Nombres</label><input type="text" name="nombres" id="edit_nombres" class="form-control" required></div>
+            <div class="col-md-6 mb-3"><label class="form-label">Apellidos</label><input type="text" name="apellidos" id="edit_apellidos" class="form-control" required></div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label">Correo</label><input type="email" name="correo" id="edit_correo" class="form-control" required></div>
+            <div class="col-md-6 mb-3"><label class="form-label">Teléfono</label><input type="text" name="telefono" id="edit_telefono" class="form-control"></div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3"><label class="form-label">Cargo</label><input type="text" name="cargo" id="edit_cargo" class="form-control"></div>
+            <div class="col-md-4 mb-3"><label class="form-label">Departamento</label><input type="text" name="departamento" id="edit_departamento" class="form-control"></div>
+            <div class="col-md-4 mb-3"><label class="form-label">Estado</label><select name="estado" id="edit_estado" class="form-select"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
+        </div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-warning">Guardar Cambios</button></div>
+    </form>
+</div></div></div>
 
 <script>
-function abrirModalAgregar() {
-    document.getElementById('modalTitulo').textContent = 'Agregar Usuario';
-    document.getElementById('accion').value = 'agregar';
-    document.getElementById('formUsuario').reset();
-    document.getElementById('estadoGroup').style.display = 'none';
-    // Establecer valores por defecto para horarios
-    document.getElementById('horario_entrada').value = '09:00';
-    document.getElementById('horario_salida').value = '18:00';
-    document.getElementById('tolerancia_minutos').value = '15';
-    document.getElementById('modalUsuario').style.display = 'block';
-}
-
-function editarUsuario(usuario) {
-    document.getElementById('modalTitulo').textContent = 'Editar Usuario';
-    document.getElementById('accion').value = 'editar';
-    document.getElementById('id').value = usuario.id;
-    document.getElementById('dni').value = usuario.dni;
-    document.getElementById('nombres').value = usuario.nombres;
-    document.getElementById('apellidos').value = usuario.apellidos;
-    document.getElementById('correo').value = usuario.correo;
-    document.getElementById('telefono').value = usuario.telefono || '';
-    document.getElementById('cargo').value = usuario.cargo || '';
-    document.getElementById('departamento').value = usuario.departamento || '';
-    document.getElementById('fecha_ingreso').value = usuario.fecha_ingreso || '';
-    document.getElementById('horario_entrada').value = usuario.horario_entrada || '09:00:00';
-    document.getElementById('horario_salida').value = usuario.horario_salida || '18:00:00';
-    document.getElementById('tolerancia_minutos').value = usuario.tolerancia_minutos || 15;
-    document.getElementById('estado').value = usuario.estado;
-    document.getElementById('estadoGroup').style.display = 'block';
-    document.getElementById('modalUsuario').style.display = 'block';
-}
-
-function eliminarUsuario(id, nombre) {
-    if (confirm('¿Estás seguro de eliminar al usuario "' + nombre + '"?\n\nEsta acción también eliminará todas sus marcaciones.')) {
-        document.getElementById('eliminar_id').value = id;
-        document.getElementById('formEliminar').submit();
-    }
-}
-
-function cerrarModal() {
-    document.getElementById('modalUsuario').style.display = 'none';
-}
-
-window.onclick = function(event) {
-    const modal = document.getElementById('modalUsuario');
-    if (event.target == modal) {
-        cerrarModal();
-    }
+function editarUsuario(u) {
+    document.getElementById('edit_id').value = u.id;
+    document.getElementById('edit_nombres').value = u.nombres;
+    document.getElementById('edit_apellidos').value = u.apellidos;
+    document.getElementById('edit_correo').value = u.correo;
+    document.getElementById('edit_telefono').value = u.telefono || '';
+    document.getElementById('edit_cargo').value = u.cargo || '';
+    document.getElementById('edit_departamento').value = u.departamento || '';
+    document.getElementById('edit_estado').value = u.estado;
+    new bootstrap.Modal(document.getElementById('modalEditar')).show();
 }
 </script>
-
 <?php include 'includes/footer.php'; ?>
